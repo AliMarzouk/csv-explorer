@@ -1,7 +1,12 @@
 import pandas as pd
+import numpy as np
 import re
 
 from lib.utils.constants import ColumnDataType
+from lib.utils.utils import read_csv_into_df
+
+class AnanlysisException(Exception):
+    pass
 
 def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]:
     """Guesses the types of the given CSV file columns.
@@ -17,7 +22,7 @@ def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]
         dict[str, ColumnTColumnDataTypeype]: mapping of the column name and the data type.
     """
     # Read the CSV file using the specified delimiter and header settings
-    df = pd.read_csv(file_path, sep=delimiter)
+    df = read_csv_into_df(file_path, delimiter)
 
     # Initialize a dictionary to store column data types
     column_types = {}
@@ -42,4 +47,25 @@ def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]
 
     return column_types
 
-# print(determine_types('amazon.csv', ','))
+def get_missing_values_indexes(file_path: str, delimiter: str, column_name: str, additional_null_values: list[str] = []) -> list[int]:
+    """Returns a list of indexes of values considered as null (nullish) in the CSV columns.
+    
+    Args:
+        file_path (str): local path to the csv file.
+        delimiter (str): delimiter character of the data.
+        column_name (str): name of the column where to look for null values
+        additional_null_values (list[str], optional): string values to consider as null. Defaults to [].
+
+    Raises:
+        AnanlysisException: raised if the given column name does not exist in the csv file.
+
+    Returns:
+        list[int]: indexes of the nullish values
+    """
+    df = read_csv_into_df(file_path, delimiter)
+    
+    if column_name not in df.columns:
+        raise AnanlysisException(f"Given column=[{column_name}] not found in csv file path=[{file_path}]")
+    
+    missing_vlaues_condition = df[column_name].isnull() | df[column_name].isin(additional_null_values)
+    return np.where(missing_vlaues_condition)[0].tolist()
