@@ -69,3 +69,44 @@ def get_missing_values_indexes(file_path: str, delimiter: str, column_name: str,
     
     missing_vlaues_condition = df[column_name].isnull() | df[column_name].isin(additional_null_values)
     return np.where(missing_vlaues_condition)[0].tolist()
+
+def count_values_by_columns(file_path: str, delimiter: str, column_names: list[str]=None) -> dict[str, dict[str, int]]:
+    df = read_csv_into_df(file_path, delimiter)
+    _check_columns_in_df(df, column_names)
+    result = {}
+    for column_name in column_names:
+        result[column_name] = _count_column_values(df, column_name)
+        
+    return result
+    
+def _count_column_values(df: pd.DataFrame, column_name: str) -> dict[str, int]:
+    """Return a dictionnaty of column values by their number of occurences.
+
+    Args:
+        df (pd.DataFrame): pandas data frame to check.
+        column_name (str): column name to process
+
+    Returns:
+        dict[str, int]: dict of column values by the number occurences
+    """
+    _check_columns_in_df(df, [column_name])
+    
+    result = {}
+    for key, value in df[column_name].value_counts(dropna=False).items():
+        result[key] = value
+        
+    return result
+
+def _check_columns_in_df(df: pd.DataFrame, column_names: list[str]) -> None:
+    """Raises an exception if one the given column names is not found in the pandas dataframe.
+
+    Args:
+        df (pd.DataFrame): pandas data frame to check.
+        column_names (list[str]): list of column names to check.
+
+    Raises:
+        AnanlysisException: exception raised if the column name is not found in the data frame.
+    """
+    for column_name in column_names:
+        if column_name not in df.columns:
+            raise AnanlysisException(f"Given column=[{column_name}] not found.")
