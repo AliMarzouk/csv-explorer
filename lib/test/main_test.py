@@ -1,7 +1,7 @@
 import os
 import csv
 
-from lib.utils.decorators import custom_test
+from lib.test.decorators import custom_test
 from lib.analysis.main import determine_types
 from lib.analysis.main import get_missing_values_indexes
 from config import config
@@ -41,6 +41,3 @@ def test_get_missing_values_indexes(test_data, expected):
     os.remove(tmp_file)
 
     assert result == expected
-    
-test_determine_types()
-test_get_missing_values_indexes()

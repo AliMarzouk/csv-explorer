@@ -8,7 +8,7 @@ def custom_test(*test_inputs: list[tuple]):
     def decorator(fn: Callable):
         @functools.wraps(fn)
         def wrapper():
-            print(f"======= Executing {fn.__qualname__} ==============")
+            print(f"\n======= Executing {fn.__qualname__} ==============")
             for index, test_input in enumerate(test_inputs):
                 try:
                     fn(test_input[0], test_input[1])
