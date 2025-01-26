@@ -4,7 +4,14 @@ import functools
 # see https://realpython.com/primer-on-python-decorators/#simple-decorators-in-python
 # see https://www.artima.com/weblogs/viewpost.jsp?thread=240845#decorator-functions-with-decorator-arguments
 
+CUSTOM_DECORATOR_ATTR = 'is_custom_test'
+
 def custom_test(*test_inputs: list[tuple]):
+    """Decorator to define a custom test.
+    
+    Executes the test function multiple times with the decorator's arguments as inputs and prints the result of the executions.
+    The decorator takes a list of tuples in the format [(test_data, expected_result)].
+    """
     def decorator(fn: Callable):
         @functools.wraps(fn)
         def wrapper():
@@ -18,5 +25,6 @@ def custom_test(*test_inputs: list[tuple]):
                     print("|")
                     print(f"----> Run failed ({index+1} / {len(test_inputs)})")
                     print(e)
+        setattr(wrapper, CUSTOM_DECORATOR_ATTR, True)
         return wrapper
     return decorator
