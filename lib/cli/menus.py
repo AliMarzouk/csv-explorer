@@ -142,6 +142,7 @@ class DisplayHeaders(Command):
         table.field_names = ['', *headers_info.keys()]
         table.add_row(['COLUMN TYPE', *[data[0] for data in headers_info.values()]])
         table.add_row(['NUMBER MISSING VALUES', *[data[1] for data in headers_info.values()]])
+        table.add_row(['ROWS COUNT', *[data[2] for data in headers_info.values()]])
         print(table)
         
 class MainMenu(Menu):

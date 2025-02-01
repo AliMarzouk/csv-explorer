@@ -154,3 +154,6 @@ def _find_outliers(df: pd.DataFrame, column_name: str) -> list[any]:
     outliers = df[column_name][((df[column_name]<(q1-1.5*IQR)) | (df[column_name]>(q3+1.5*IQR)))]
     return outliers.tolist()
     
+def count_rows(file_path: str, delimiter: str):
+    df = read_csv_into_df(file_path, delimiter)
+    return len(df.index)
