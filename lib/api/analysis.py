@@ -1,4 +1,4 @@
-from lib.core.analysis import count_values_by_columns, get_missing_values_indexes_by_columns
+from lib.core.analysis import count_values_by_columns, find_outliers_by_columns, get_missing_values_indexes_by_columns
 from lib.utils.utils import read_csv_into_df
 from config.config import OUTPUT_CSV_FILE 
 
@@ -12,3 +12,6 @@ def count_missing_values(column_names: list[str] = [], additional_null_values: l
 
 def count_values(column_names: list[str] = []) -> dict[str, dict[str, int]]:
     return count_values_by_columns(OUTPUT_CSV_FILE, ',', column_names)
+
+def find_outliers(column_names: list[str] = []) -> dict[str, list[str]]:
+    return find_outliers_by_columns(OUTPUT_CSV_FILE, ',', column_names)

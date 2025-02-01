@@ -1,8 +1,11 @@
-from lib.api.analysis import count_missing_values, count_values, read_csv_file
+from lib.api.analysis import count_missing_values, count_values, find_outliers, read_csv_file
 from lib.core.analysis import ProcessingError
 from lib.cli.utils import input_column_names, sanitized_input, bcolor, clear_console, open_file_selector, sanitized_input
 from itertools import islice
         
+
+LIMIT_DISPLAY = 50
+SECTION_DIVIDER = '-' * 50
             
 class MenuInputError(BaseException):
     pass
@@ -13,6 +16,9 @@ class Command:
     
     def execute(self):
         pass
+    
+    def print_title(self):
+        print(f"{bcolor.CYAN}{self.get_title()}{bcolor.END}\n")
 
 class Menu(Command):
     def __init__(self, title: str, choices: list[Command]):
@@ -24,16 +30,16 @@ class Menu(Command):
         
     def _print(self, error_message=""):
         clear_console()
-        print('-'*15)
+        print(SECTION_DIVIDER)
         if error_message:
-            print('-'*15)
-            print(error_message + ". Try again.")
-            print('-'*15)
-        print(f"{bcolor.CYAN}{self.title}{bcolor.END}\n")
+            print(SECTION_DIVIDER)
+            print(bcolor.RED + error_message + ". Try again." + bcolor.END)
+            print(SECTION_DIVIDER)
+            self.print_title()
         print("0. Go back to previous menu.")
         for index, option in enumerate(self.choices):
             print(f"{index+1}. {option.get_title()}.")
-        print('-'*15)
+        print(SECTION_DIVIDER)
         
     def execute(self):
         stay = True
@@ -42,18 +48,21 @@ class Menu(Command):
             self._print(error_message)
             error_message = ""
             try:
-                user_selection: int = int(sanitized_input("Enter choice"))
+                user_selection_str: str = sanitized_input("Enter choice")
+                user_selection: int = int(user_selection_str)
                 if user_selection not in range(len(self.choices) + 1):
-                    raise MenuInputError(f"Invalid input [{user_selection}] (press CTRL+C to leave)")
+                    raise MenuInputError()
             except (ValueError, MenuInputError) as e: 
-                error_message = str(e)
+                print(repr(e))
+                error_message = f"Invalid input [{user_selection_str}] (press CTRL+C to leave)"
                 continue
             if user_selection == 0:
                 stay = False
             try:
                 self.choices[user_selection-1].execute()
             except ProcessingError as e:
-                error_message = "Something is not right." + str(e)
+                print(repr(e))
+                error_message = "Something is not right. " + str(e)
                 continue
             
 class CountMissingValuesByCol(Command):
@@ -62,6 +71,7 @@ class CountMissingValuesByCol(Command):
     
     def execute(self):
         clear_console()
+        self.print_title()
         column_names = input_column_names()
         additional_values = sanitized_input("You can provide a comma seperated list of values to consider as null (default=[])", '').split(',')
         missing_values = count_missing_values(column_names, additional_values)
@@ -81,6 +91,7 @@ class CountValuesByCol(Command):
         return "Count number of values by column"
     def execute(self):
         clear_console()
+        self.print_title()
         column_names = input_column_names()
         values_by_col_count = count_values(column_names)
         self.print_result(values_by_col_count)
@@ -90,16 +101,35 @@ class CountValuesByCol(Command):
         table = PrettyTable()
         table.hrules = HRuleStyle.ALL
         for col_name in value_count_by_col.keys():
-            count_text = '\n'.join([f"{key}: {value}" for key, value in islice(value_count_by_col[col_name].items(), 0, 100)])
-            if len(value_count_by_col[col_name]) > 100:
+            count_text = '\n'.join([f"{key}: {value}" for key, value in islice(value_count_by_col[col_name].items(), 0, LIMIT_DISPLAY)])
+            if len(value_count_by_col[col_name]) > LIMIT_DISPLAY:
                 count_text += '\n ....(more)'
             table.add_column(col_name, [count_text])
+        print(table)
+        
+class FindOutliers(Command):
+    def get_title(self):
+        return "Find Outliers by column"
+    def execute(self):
+        clear_console()
+        self.print_title()
+        column_names = input_column_names()
+        outliers_by_col = find_outliers(column_names)
+        self.print_result(outliers_by_col)
+        
+    def print_result(self, outliers_by_col: dict[str, list[str]]):
+        from prettytable import PrettyTable, HRuleStyle
+        table = PrettyTable()
+        table.hrules = HRuleStyle.ALL
+        table.field_names = ['', *outliers_by_col.keys()]
+        table.add_row(['OUTLIERS COUNT', *[len(outliers_by_col[col_name]) for col_name in outliers_by_col.keys()]])
+        table.add_row(['VALUES', *['\n'.join(map(str,[*outliers_by_col[col_name][:LIMIT_DISPLAY], '' if len(outliers_by_col[col_name]) <= LIMIT_DISPLAY else '... (more)'])) for col_name in outliers_by_col.keys()]])
         print(table)
         
 class MainMenu(Menu):
     def __init__(self):
         title = "Main menu"
-        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol()])
+        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol(), FindOutliers()])
 
 def read_file():
     sanitized_input("First you need to select a CSV file, press enter to continue")

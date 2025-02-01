@@ -27,6 +27,10 @@ def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]
     df = read_csv_into_df(file_path, delimiter)
 
     # Initialize a dictionary to store column data types
+    
+    return _determine_types(df)
+    
+def _determine_types(df: pd.DataFrame):
     column_types = {}
 
     # Loop through columns and infer data types
@@ -122,3 +126,31 @@ def _check_columns_in_df(df: pd.DataFrame, column_names: list[str]) -> None:
     for column_name in column_names:
         if column_name not in df.columns:
             raise AnanlysisError(f"Given column=[{column_name}] not found. Please choose one of the following {df.columns.tolist()}")
+        
+def _check_columns_types(df: pd.DataFrame, column_names: list[str], allowed_types: list[ColumnDataType]) -> None:
+    type_by_column = _determine_types(df)
+    print(type_by_column)
+    print(type_by_column)
+    columns_types: list[ColumnDataType] = [type_by_column[col_name] for col_name in column_names]
+    for column_type in columns_types:
+        if column_type not in allowed_types:
+            raise AnanlysisError(f"Data has a column of type [{column_type.name}] wich is not allowed. Only {[a.name for a in allowed_types]} types are allowed")
+        
+def find_outliers_by_columns(file_path: str, delimiter: str, column_names: list[str]=None) -> dict[str, list[any]]:
+    df = read_csv_into_df(file_path, delimiter)
+    if not column_names:
+        column_names = df.columns
+    _check_columns_in_df(df, column_names)
+    _check_columns_types(df, column_names, [ColumnDataType.FLOATING, ColumnDataType.INTEGER])
+    result = {}
+    for column_name in column_names:
+        result[column_name] = _find_outliers(df, column_name)
+    return result
+    
+def _find_outliers(df: pd.DataFrame, column_name: str) -> list[any]:
+    q1=df[column_name].quantile(0.25)
+    q3=df[column_name].quantile(0.75)
+    IQR = q3-q1
+    outliers = df[column_name][((df[column_name]<(q1-1.5*IQR)) | (df[column_name]>(q3+1.5*IQR)))]
+    return outliers.tolist()
+    
