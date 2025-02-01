@@ -1,4 +1,4 @@
-from lib.core.analysis import count_values_by_columns, find_outliers_by_columns, get_missing_values_indexes_by_columns
+from lib.core.analysis import count_values_by_columns, determine_types, find_outliers_by_columns, get_missing_values_indexes_by_columns
 from lib.utils.utils import read_csv_into_df
 from config.config import OUTPUT_CSV_FILE 
 
@@ -15,3 +15,9 @@ def count_values(column_names: list[str] = []) -> dict[str, dict[str, int]]:
 
 def find_outliers(column_names: list[str] = []) -> dict[str, list[str]]:
     return find_outliers_by_columns(OUTPUT_CSV_FILE, ',', column_names)
+
+def get_header_infos() -> dict[str, list[str]]:
+    data_type_by_col = determine_types(OUTPUT_CSV_FILE, ',')
+    missing_values_indexes_by_col = get_missing_values_indexes_by_columns(OUTPUT_CSV_FILE, ',', [], [])
+    result = {col_name: [data_type.value] for col_name, data_type in data_type_by_col.items()}
+    return {col_name: [*result[col_name], len(missing_indexes)] for col_name, missing_indexes in missing_values_indexes_by_col.items()}

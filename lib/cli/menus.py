@@ -1,4 +1,4 @@
-from lib.api.analysis import count_missing_values, count_values, find_outliers, read_csv_file
+from lib.api.analysis import count_missing_values, count_values, find_outliers, get_header_infos, read_csv_file
 from lib.core.analysis import ProcessingError
 from lib.cli.utils import input_column_names, sanitized_input, bcolor, clear_console, open_file_selector, sanitized_input
 from itertools import islice
@@ -125,11 +125,29 @@ class FindOutliers(Command):
         table.add_row(['OUTLIERS COUNT', *[len(outliers_by_col[col_name]) for col_name in outliers_by_col.keys()]])
         table.add_row(['VALUES', *['\n'.join(map(str,[*outliers_by_col[col_name][:LIMIT_DISPLAY], '' if len(outliers_by_col[col_name]) <= LIMIT_DISPLAY else '... (more)'])) for col_name in outliers_by_col.keys()]])
         print(table)
+
+class DisplayHeaders(Command):
+    def get_title(self):
+        return "Display headers"
+    def execute(self):
+        clear_console()
+        self.print_title()
+        headers_info = get_header_infos()
+        self.print_result(headers_info)
+        
+    def print_result(self, headers_info: dict[str, list[str]]):
+        from prettytable import PrettyTable, HRuleStyle
+        table = PrettyTable()
+        table.hrules = HRuleStyle.ALL
+        table.field_names = ['', *headers_info.keys()]
+        table.add_row(['COLUMN TYPE', *[data[0] for data in headers_info.values()]])
+        table.add_row(['NUMBER MISSING VALUES', *[data[1] for data in headers_info.values()]])
+        print(table)
         
 class MainMenu(Menu):
     def __init__(self):
         title = "Main menu"
-        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol(), FindOutliers()])
+        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol(), FindOutliers(), DisplayHeaders()])
 
 def read_file():
     sanitized_input("First you need to select a CSV file, press enter to continue")
