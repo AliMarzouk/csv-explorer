@@ -1,5 +1,5 @@
 from lib.api.analysis import count_missing_values, count_values, read_csv_file
-from lib.analysis.main import ProcessingError
+from lib.core.analysis import ProcessingError
 from lib.cli.utils import input_column_names, sanitized_input, bcolor, clear_console, open_file_selector, sanitized_input
 from itertools import islice
         

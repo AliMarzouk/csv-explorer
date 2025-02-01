@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from lib.test.decorators import custom_test
-from lib.analysis.main import determine_types, get_missing_values_indexes, count_values_by_columns
+from lib.core.analysis import determine_types, count_values_by_columns
 from config import config
 from lib.utils.constants import ColumnDataType
 

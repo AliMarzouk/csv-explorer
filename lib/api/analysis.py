@@ -1,4 +1,4 @@
-from lib.analysis.main import count_values_by_columns, get_missing_values_indexes_by_columns
+from lib.core.analysis import count_values_by_columns, get_missing_values_indexes_by_columns
 from lib.utils.utils import read_csv_into_df
 from config.config import OUTPUT_CSV_FILE 
 
