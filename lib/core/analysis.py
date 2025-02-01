@@ -5,7 +5,9 @@ import re
 from lib.utils.constants import ColumnDataType
 from lib.utils.utils import read_csv_into_df
 
-class AnanlysisException(Exception):
+class ProcessingError(BaseException):
+    pass
+class AnanlysisError(ProcessingError):
     pass
 
 def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]:
@@ -47,7 +49,7 @@ def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]
 
     return column_types
 
-def get_missing_values_indexes(file_path: str, delimiter: str, column_name: str, additional_null_values: list[str] = []) -> list[int]:
+def get_missing_values_indexes_by_columns(file_path: str, delimiter: str, column_names: list[str] = [], additional_null_values: list[str] = []) -> dict[str, list[int]]:
     """Returns a list of indexes of values considered as null (nullish) in the CSV columns.
     
     Args:
@@ -57,16 +59,24 @@ def get_missing_values_indexes(file_path: str, delimiter: str, column_name: str,
         additional_null_values (list[str], optional): string values to consider as null. Defaults to [].
 
     Raises:
-        AnanlysisException: raised if the given column name does not exist in the csv file.
+        AnanlysisError: raised if the given column name does not exist in the csv file.
 
     Returns:
         list[int]: indexes of the nullish values
     """
     df = read_csv_into_df(file_path, delimiter)
+    _check_columns_in_df(df, column_names)
     
-    if column_name not in df.columns:
-        raise AnanlysisException(f"Given column=[{column_name}] not found in csv file path=[{file_path}]")
-    
+    result = {}
+    if not column_names:
+        column_names = df.columns
+    for column_name in column_names:
+        result[column_name] = _get_column_missing_values_indexes(df, column_name, additional_null_values)
+        
+    return result
+
+def _get_column_missing_values_indexes(df: pd.DataFrame, column_name: str, additional_null_values: list[str] = []) -> list[int]:
+    _check_columns_in_df(df, [column_name])
     missing_vlaues_condition = df[column_name].isnull() | df[column_name].isin(additional_null_values)
     return np.where(missing_vlaues_condition)[0].tolist()
 
@@ -74,6 +84,8 @@ def count_values_by_columns(file_path: str, delimiter: str, column_names: list[s
     df = read_csv_into_df(file_path, delimiter)
     _check_columns_in_df(df, column_names)
     result = {}
+    if not column_names:
+        column_names = df.columns
     for column_name in column_names:
         result[column_name] = _count_column_values(df, column_name)
         
@@ -105,8 +117,8 @@ def _check_columns_in_df(df: pd.DataFrame, column_names: list[str]) -> None:
         column_names (list[str]): list of column names to check.
 
     Raises:
-        AnanlysisException: exception raised if the column name is not found in the data frame.
+        AnanlysisError: exception raised if the column name is not found in the data frame.
     """
     for column_name in column_names:
         if column_name not in df.columns:
-            raise AnanlysisException(f"Given column=[{column_name}] not found.")
+            raise AnanlysisError(f"Given column=[{column_name}] not found. Please choose one of the following {df.columns.tolist()}")
