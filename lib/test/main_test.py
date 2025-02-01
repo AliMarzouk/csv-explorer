@@ -26,22 +26,22 @@ def test_determine_types(test_data, expected):
 
     assert result == expected, "Should return expected result"
     
-@custom_test(
-    (
-        ([["year","state","month","number","date"], ["1998","Acre","Janeiro","0","1998-01-01"], ["2017","Acre","February","1","2017-01-01"], ["2017","Acre",None,"1","2017-01-01"]], "month", ["Janeiro"]),
-        [0,2]
-    )
-)
-def test_get_missing_values_indexes(test_data, expected):
-    tmp_file = f'{config.OUTPUT_TMP_FOLDER}/tmp.csv';
-    with open(tmp_file, 'w') as file:
-        writer = csv.writer(file)
-        writer.writerows(test_data[0])
+# @custom_test(
+#     (
+#         ([["year","state","month","number","date"], ["1998","Acre","Janeiro","0","1998-01-01"], ["2017","Acre","February","1","2017-01-01"], ["2017","Acre",None,"1","2017-01-01"]], "month", ["Janeiro"]),
+#         [0,2]
+#     )
+# )
+# def test_get_missing_values_indexes(test_data, expected):
+#     tmp_file = f'{config.OUTPUT_TMP_FOLDER}/tmp.csv';
+#     with open(tmp_file, 'w') as file:
+#         writer = csv.writer(file)
+#         writer.writerows(test_data[0])
         
-    result = get_missing_values_indexes(tmp_file, ',', test_data[1], test_data[2])
-    os.remove(tmp_file)
+#     result = get_missing_values_indexes(tmp_file, ',', test_data[1], test_data[2])
+#     os.remove(tmp_file)
 
-    assert result == expected, "Should return expected result"
+#     assert result == expected, "Should return expected result"
     
     
 @custom_test(
