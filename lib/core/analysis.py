@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import re
 
+from lib.core.utils import ProcessingError, check_columns_in_df, check_columns_types, determine_types as determine_types_df
 from lib.utils.constants import ColumnDataType
 from lib.utils.utils import read_csv_into_df
 
-class ProcessingError(BaseException):
-    pass
+
 class AnanlysisError(ProcessingError):
     pass
 
@@ -28,30 +28,7 @@ def determine_types(file_path: str, delimiter: str) -> dict[str, ColumnDataType]
 
     # Initialize a dictionary to store column data types
     
-    return _determine_types(df)
-    
-def _determine_types(df: pd.DataFrame):
-    column_types = {}
-
-    # Loop through columns and infer data types
-    for column in df.columns:
-        # Check for datetime format "YYYY-MM-DD HH:MM:SS"
-        is_datetime = all(re.match(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', str(value)) for value in df[column])
-
-        # Check for date format "YYYY-MM-DD"
-        is_date = all(re.match(r'\d{4}-\d{2}-\d{2}', str(value)) for value in df[column])
-
-        # Assign data type based on format detection
-        if is_datetime:
-            inferred_type = ColumnDataType.DATETIME
-        elif is_date:
-            inferred_type = ColumnDataType.DATE
-        else:
-            inferred_type = ColumnDataType(pd.api.types.infer_dtype(df[column], skipna=True))
-
-        column_types[column] = inferred_type
-
-    return column_types
+    return determine_types_df(df)
 
 def get_missing_values_indexes_by_columns(file_path: str, delimiter: str, column_names: list[str] = [], additional_null_values: list[str] = []) -> dict[str, list[int]]:
     """Returns a list of indexes of values considered as null (nullish) in the CSV columns.
@@ -69,7 +46,7 @@ def get_missing_values_indexes_by_columns(file_path: str, delimiter: str, column
         list[int]: indexes of the nullish values
     """
     df = read_csv_into_df(file_path, delimiter)
-    _check_columns_in_df(df, column_names)
+    check_columns_in_df(df, column_names)
     
     result = {}
     if not column_names:
@@ -80,13 +57,13 @@ def get_missing_values_indexes_by_columns(file_path: str, delimiter: str, column
     return result
 
 def _get_column_missing_values_indexes(df: pd.DataFrame, column_name: str, additional_null_values: list[str] = []) -> list[int]:
-    _check_columns_in_df(df, [column_name])
+    check_columns_in_df(df, [column_name])
     missing_vlaues_condition = df[column_name].isnull() | df[column_name].isin(additional_null_values)
     return np.where(missing_vlaues_condition)[0].tolist()
 
 def count_values_by_columns(file_path: str, delimiter: str, column_names: list[str]=None) -> dict[str, dict[str, int]]:
     df = read_csv_into_df(file_path, delimiter)
-    _check_columns_in_df(df, column_names)
+    check_columns_in_df(df, column_names)
     result = {}
     if not column_names:
         column_names = df.columns
@@ -105,43 +82,20 @@ def _count_column_values(df: pd.DataFrame, column_name: str) -> dict[str, int]:
     Returns:
         dict[str, int]: dict of column values by the number occurences
     """
-    _check_columns_in_df(df, [column_name])
+    check_columns_in_df(df, [column_name])
     
     result = {}
     for key, value in df[column_name].value_counts(dropna=False).items():
         result[key] = value
         
     return result
-
-def _check_columns_in_df(df: pd.DataFrame, column_names: list[str]) -> None:
-    """Raises an exception if one the given column names is not found in the pandas dataframe.
-
-    Args:
-        df (pd.DataFrame): pandas data frame to check.
-        column_names (list[str]): list of column names to check.
-
-    Raises:
-        AnanlysisError: exception raised if the column name is not found in the data frame.
-    """
-    for column_name in column_names:
-        if column_name not in df.columns:
-            raise AnanlysisError(f"Given column=[{column_name}] not found. Please choose one of the following {df.columns.tolist()}")
-        
-def _check_columns_types(df: pd.DataFrame, column_names: list[str], allowed_types: list[ColumnDataType]) -> None:
-    type_by_column = _determine_types(df)
-    print(type_by_column)
-    print(type_by_column)
-    columns_types: list[ColumnDataType] = [type_by_column[col_name] for col_name in column_names]
-    for column_type in columns_types:
-        if column_type not in allowed_types:
-            raise AnanlysisError(f"Data has a column of type [{column_type.name}] wich is not allowed. Only {[a.name for a in allowed_types]} types are allowed")
-        
+ 
 def find_outliers_by_columns(file_path: str, delimiter: str, column_names: list[str]=None) -> dict[str, list[any]]:
     df = read_csv_into_df(file_path, delimiter)
     if not column_names:
         column_names = df.columns
-    _check_columns_in_df(df, column_names)
-    _check_columns_types(df, column_names, [ColumnDataType.FLOATING, ColumnDataType.INTEGER])
+    check_columns_in_df(df, column_names)
+    check_columns_types(df, column_names, [ColumnDataType.FLOATING, ColumnDataType.INTEGER])
     result = {}
     for column_name in column_names:
         result[column_name] = _find_outliers(df, column_name)

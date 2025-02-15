@@ -1,7 +1,10 @@
 from lib.api.analysis import count_missing_values, count_values, find_outliers, get_header_infos, read_csv_file
+from lib.api.manipulation import handle_missing_values
 from lib.core.analysis import ProcessingError
-from lib.cli.utils import input_column_names, sanitized_input, bcolor, clear_console, open_file_selector, sanitized_input
+from lib.cli.utils import input_column_names, print_success, print_warning, sanitized_input, bcolor, clear_console, open_file_selector, sanitized_input
 from itertools import islice
+
+from lib.core.manipulation import MissingValueReplaceOption
         
 
 LIMIT_DISPLAY = 50
@@ -35,7 +38,7 @@ class Menu(Command):
             print(SECTION_DIVIDER)
             print(bcolor.RED + error_message + ". Try again." + bcolor.END)
             print(SECTION_DIVIDER)
-            self.print_title()
+        self.print_title()
         print("0. Go back to previous menu.")
         for index, option in enumerate(self.choices):
             print(f"{index+1}. {option.get_title()}.")
@@ -53,11 +56,11 @@ class Menu(Command):
                 if user_selection not in range(len(self.choices) + 1):
                     raise MenuInputError()
             except (ValueError, MenuInputError) as e: 
-                print(repr(e))
                 error_message = f"Invalid input [{user_selection_str}] (press CTRL+C to leave)"
                 continue
             if user_selection == 0:
                 stay = False
+                continue
             try:
                 self.choices[user_selection-1].execute()
             except ProcessingError as e:
@@ -129,6 +132,7 @@ class FindOutliers(Command):
 class DisplayHeaders(Command):
     def get_title(self):
         return "Display headers"
+
     def execute(self):
         clear_console()
         self.print_title()
@@ -145,10 +149,59 @@ class DisplayHeaders(Command):
         table.add_row(['ROWS COUNT', *[data[2] for data in headers_info.values()]])
         print(table)
         
+class ReplaceMissingValuesCommand(Command):
+    def __init__(self, replace_missing_values_by: MissingValueReplaceOption):
+        self.replace_missing_values_by = replace_missing_values_by 
+        super().__init__()
+    
+    def get_title(self):
+        title = "Fill missing values with "
+        if not self.replace_missing_values_by:
+            raise MenuInputError("Replacement value cannot be null")
+        elif self.replace_missing_values_by == MissingValueReplaceOption.MEAN:
+            return title + "column mean value"
+        elif self.replace_missing_values_by == MissingValueReplaceOption.MEDIAN:
+            return title + "column median value"
+        elif self.replace_missing_values_by == MissingValueReplaceOption.PANDAS_LINEAR_INTERPOLATE:
+            return title + "data linear interpolation"
+        elif self.replace_missing_values_by == MissingValueReplaceOption.CUSTOM_STRING_VALUE:
+            return title + "custom input value" 
+        
+    def execute(self):
+        clear_console()
+        self.print_title()
+        replace_value = None
+        column_names = input_column_names()
+        if self.replace_missing_values_by == MissingValueReplaceOption.CUSTOM_STRING_VALUE:
+            replace_value = sanitized_input("Value to replaced by")
+        handle_missing_values(column_names, replace_by=replace_value or self.replace_missing_values_by)
+        print_success("Missing values successfully processed!")
+        
+class RemoveMissingValues(Command):
+    def get_title(self):
+        return "Remove lines with missing values"
+
+    def execute(self):
+        clear_console()
+        self.print_title()
+        print_warning("WARNING: This command drops the whole line of the csv file when a missing vlaue is found in the one of the given columns.")
+        column_names = input_column_names()
+        handle_missing_values(column_names)
+        print_success("Missing values successfully processed!")
+        
+class ReplaceMissingValuesMenu(Menu):
+    def __init__(self):
+        title = "Handle missing values"
+        super().__init__(title, [ReplaceMissingValuesCommand(MissingValueReplaceOption.MEAN), 
+                                 ReplaceMissingValuesCommand(MissingValueReplaceOption.MEDIAN), 
+                                 ReplaceMissingValuesCommand(MissingValueReplaceOption.PANDAS_LINEAR_INTERPOLATE),
+                                 ReplaceMissingValuesCommand(MissingValueReplaceOption.CUSTOM_STRING_VALUE),
+                                 RemoveMissingValues()])
+
 class MainMenu(Menu):
     def __init__(self):
         title = "Main menu"
-        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol(), FindOutliers(), DisplayHeaders()])
+        super().__init__(title, [CountMissingValuesByCol(), CountValuesByCol(), FindOutliers(), DisplayHeaders(), ReplaceMissingValuesMenu()])
 
 def read_file():
     sanitized_input("First you need to select a CSV file, press enter to continue")

@@ -39,3 +39,9 @@ def input_column_names() -> list[str]:
 
 def sanitized_input(prompt, default=None):
     return str.strip(input(prompt + " >>  ")) or default
+
+def print_success(message: str):
+    print(bcolor.GREEN + message + bcolor.END)
+    
+def print_warning(message: str):
+    print(bcolor.YELLOW + message + bcolor.END)
