@@ -2,7 +2,7 @@ import importlib
 
 from .decorators import CUSTOM_DECORATOR_ATTR
 
-test_modules_names = [".main_test"]
+test_modules_names = ["lib.core.test.utils_test"]
 
 def run_tests():
     """Run all tests specified in the "test_modules_names" list.

@@ -4,7 +4,7 @@ import pandas as pd
 from lib.utils.constants import ColumnDataType
 
 
-class ProcessingError(BaseException):
+class ProcessingError(Exception):
     pass
 
 class UtilsError(ProcessingError):
@@ -24,7 +24,15 @@ def check_columns_in_df(df: pd.DataFrame, column_names: list[str]) -> None:
         if column_name not in df.columns:
             raise UtilsError(f"Given column=[{column_name}] not found. Please choose one of the following {df.columns.tolist()}")
         
-def determine_types(df: pd.DataFrame):
+def determine_types(df: pd.DataFrame) -> dict[str, ColumnDataType]:
+    """Returns a dictionnary of column data types by column names given a pandas data frame.
+
+    Args:
+        df (pd.DataFrame): data frame to determine column data types.
+
+    Returns:
+        dict[str, ColumnDataType]: column data types by column names.
+    """
     column_types = {}
 
     # Loop through columns and infer data types
@@ -48,9 +56,17 @@ def determine_types(df: pd.DataFrame):
     return column_types
 
 def check_columns_types(df: pd.DataFrame, column_names: list[str], allowed_types: list[ColumnDataType]) -> None:
+    """Raises UtilsError exception if the given columns have a type that is not in the allowed types.
+
+    Args:
+        df (pd.DataFrame): data frame to check column types into.
+        column_names (list[str]): column names to check.
+        allowed_types (list[ColumnDataType]): allowed types to use in the check
+
+    Raises:
+        UtilsError: raised if one of the columns have a type that is not in the allowed types.
+    """
     type_by_column = determine_types(df)
-    print(type_by_column)
-    print(type_by_column)
     columns_types: list[ColumnDataType] = [type_by_column[col_name] for col_name in column_names]
     for column_type in columns_types:
         if column_type not in allowed_types:
